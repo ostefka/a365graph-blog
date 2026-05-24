@@ -1,0 +1,36 @@
+title: "a365graph notes"
+description: "Notes on the Microsoft 365 Copilot Agent &amp; app Package Management API — inventory, governance, sprawl, and a live demo dashboard."
+author: "Alex Example"
+url: ""
+baseurl: ""
+
+# Theme: shipped with GitHub Pages, no extra Gemfile needed.
+theme: minima
+minima:
+  skin: classic
+  social_links:
+    - { platform: github, user_url: "https://github.com/" }
+
+# Pretty URLs
+permalink: /:year/:month/:day/:title/
+
+# Show posts on the landing page
+show_excerpts: true
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      author: "Alex Example"
