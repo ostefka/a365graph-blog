@@ -28,15 +28,19 @@ permalink: /article-copilot-package-management-api
 > *This article is about the Graph API. The dashboard is just an enrichment
 > that shows the kind of value sitting in those JSON rows.*
 
-> **Prerequisites.** This is a Microsoft 365 Copilot admin surface. To use
-> it you need:
+> **Prerequisites.** This is a Microsoft 365 Copilot admin surface, but it
+> sits behind a *separate* licensing gate. To use it you need:
 >
-> - The tenant must be licensed for **Microsoft 365 Copilot** — the packages
->   collection is the catalog backing that product.
+> - The tenant must be licensed for **[Microsoft Agent 365](https://www.microsoft.com/microsoft-agent-365)** —
+>   per Microsoft's own [Package Management API overview](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/overview),
+>   *access to the Package Management API requires a Microsoft Agent 365
+>   license*. An M365 Copilot license alone is **not** enough.
 > - The calling user must have the **Copilot Admin** role (or Global Admin /
 >   Cloud App Admin).
 > - The token must be **delegated**; app-only is not currently supported
 >   (more on that in the gotcha below).
+>
+> Official docs: **[Package Management API overview (preview)](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/overview)**.
 
 ![Dashboard summary across 258 custom Copilot packages]({{ "/assets/images/dashboard.png" | relative_url }})
 
@@ -488,8 +492,9 @@ Three asks, in priority order:
 
 ## Try it yourself
 
-If you have a Microsoft 365 Copilot-licensed tenant and a Copilot Admin
-account, the smallest end-to-end call against this API is essentially:
+If you have a tenant licensed for [Microsoft Agent 365](https://www.microsoft.com/microsoft-agent-365)
+and a Copilot Admin account, the smallest end-to-end call against this API is
+essentially:
 
 ```bash
 az login --scope https://graph.microsoft.com/CopilotPackages.Read.All \

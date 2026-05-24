@@ -30,15 +30,19 @@ permalink: /article-copilot-package-management-api-cs
 > *Tenhle článek je o Graph API. Dashboard je jen obohacení, ukázka toho, co
 > v JSON řádcích reálně sedí.*
 
-> **Předpoklady.** Tohle je admin povrch Microsoft 365 Copilotu. Abyste ho
-> mohli použít, potřebujete:
+> **Předpoklady.** Tohle je admin povrch Microsoft 365 Copilotu, ale licenčně
+> sedí za *samostatným* produktem. Abyste ho mohli použít, potřebujete:
 >
-> - Tenant musí mít licenci na **Microsoft 365 Copilot** — kolekce packages
->   je katalog, který tenhle produkt pohání.
+> - Tenant musí mít licenci na **[Microsoft Agent 365](https://www.microsoft.com/microsoft-agent-365)** —
+>   podle [oficiální dokumentace](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/overview)
+>   *přístup k Package Management API vyžaduje licenci Microsoft Agent 365.*
+>   Samotná licence M365 Copilot **nestačí**.
 > - Volající uživatel musí mít roli **Copilot Admin** (nebo Global Admin /
 >   Cloud App Admin).
 > - Token musí být **delegated**; app-only zatím není podporovaný
 >   (viz problém níže).
+>
+> Oficiální dokumentace: **[Package Management API overview (preview)](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/overview)**.
 
 ![Souhrnný dashboard s přehledem 258 vlastních Copilot packages]({{ "/assets/images/dashboard.png" | relative_url }})
 
@@ -492,9 +496,9 @@ Tři přání, v pořadí priority:
 
 ## Vyzkoušejte si to
 
-Jestli máte tenant s licencí na Microsoft 365 Copilot a účet s rolí Copilot
-Admin, nejjednodušší end-to-end volání proti tomuhle API vypadá v podstatě
-takhle:
+Jestli máte tenant s licencí na [Microsoft Agent 365](https://www.microsoft.com/microsoft-agent-365)
+a účet s rolí Copilot Admin, nejjednodušší end-to-end volání proti tomuhle
+API vypadá v podstatě takhle:
 
 ```bash
 az login --scope https://graph.microsoft.com/CopilotPackages.Read.All \
