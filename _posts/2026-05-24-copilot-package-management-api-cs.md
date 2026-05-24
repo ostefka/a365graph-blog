@@ -14,9 +14,9 @@ excerpt: >
 permalink: /2026/05/24/copilot-package-management-api-cs/
 ---
 
-<p style="font-size: 0.9em; color: #666;">
-  <a href="{{ '/2026/05/24/copilot-package-management-api/' | relative_url }}">🇬🇧 English</a> &middot;
-  🇨🇿 Česká verze
+<p style="font-size: 0.9em; color: #666; padding: 0.4em 0;">
+  <a href="{{ '/2026/05/24/copilot-package-management-api/' | relative_url }}">&larr; English</a> &nbsp;|&nbsp;
+  <strong>Česky</strong>
 </p>
 
 > **TL;DR** — Microsoft vydal Graph endpoint

@@ -1,13 +1,13 @@
 title: "a365graph notes"
 description: "Notes on the Microsoft 365 Copilot Agent &amp; app Package Management API — inventory, governance, sprawl, and a live demo dashboard."
 author: "Alex Example"
-url: ""
-baseurl: ""
+url: "https://ostefka.github.io"
+baseurl: "/a365graph-blog"
 
 # Theme: shipped with GitHub Pages, no extra Gemfile needed.
 theme: minima
 minima:
-  skin: classic
+  skin: auto
   social_links:
     - { platform: github, user_url: "https://github.com/" }
 

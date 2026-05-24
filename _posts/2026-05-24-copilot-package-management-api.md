@@ -12,9 +12,9 @@ excerpt: >
   Includes a live demo dashboard at a365graph.ai-news.cz.
 ---
 
-<p style="font-size: 0.9em; color: #666;">
-  🇬🇧 English &middot;
-  <a href="{{ '/2026/05/24/copilot-package-management-api-cs/' | relative_url }}">🇨🇿 Česká verze</a>
+<p style="font-size: 0.9em; color: #666; padding: 0.4em 0;">
+  <strong>English</strong> &nbsp;|&nbsp;
+  <a href="{{ '/2026/05/24/copilot-package-management-api-cs/' | relative_url }}">Česky &rarr;</a>
 </p>
 
 > **TL;DR** — Microsoft shipped a Graph endpoint
