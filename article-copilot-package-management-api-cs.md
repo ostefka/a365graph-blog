@@ -21,10 +21,24 @@ permalink: /article-copilot-package-management-api-cs
 > i Office add-iny ve svém tenantu — napříč Copilot Studiem, Agent Builderem,
 > Teams Toolkitem, SharePointem, AI Foundry i sideloadovanými balíčky —
 > v jednom stránkovaném JSON feedu. Spustili jsme ho proti reálnému tenantu,
-> našli 258 packages, postavili nad tím statický dashboard a obraz "agent
-> sprawlu", který z dat vystoupil, je zajímavější než kterákoli prezentace.
+> našli 258 packages a obraz "agent sprawlu", který z dat vystoupil, je
+> zajímavější než kterákoli prezentace.
 >
-> Živé demo (sanitizované, read-only): **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**
+> Jako pomůcku — abyste viděli, co API skutečně vrací, aniž byste museli
+> napsat jediný řádek kódu — jsme výstup sanitizovali a dali za read-only
+> dashboard na **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
+> *Tenhle článek je o Graph API. Dashboard je jen obohacení, ukázka toho, co
+> v JSON řádcích reálně sedí.*
+
+> **Předpoklady.** Tohle je admin povrch Microsoft 365 Copilotu. Abyste ho
+> mohli použít, potřebujete:
+>
+> - Tenant musí mít licenci na **Microsoft 365 Copilot** — kolekce packages
+>   je katalog, který tenhle produkt pohání.
+> - Volající uživatel musí mít roli **Copilot Admin** (nebo Global Admin /
+>   Cloud App Admin).
+> - Token musí být **delegated**; app-only zatím není podporovaný
+>   (viz problém níže).
 
 ![Souhrnný dashboard s přehledem 258 vlastních Copilot packages]({{ "/assets/images/dashboard.png" | relative_url }})
 
@@ -333,70 +347,50 @@ Pár závěrů, které překvapily i tým, který tenant provozuje:
 
 ![Cowork Skills: znovupoužitelné definice LLM toolů v SharePointu]({{ "/assets/images/cowork-skills.png" | relative_url }})
 
-## Dashboard: [a365graph.ai-news.cz](https://a365graph.ai-news.cz/)
+## Co API přináší, vizualizováno
 
-JSON inventář jsme přetavili do plně statického dashboardu. **Bez backendu,
-bez databáze, bez auth** — výstup z API je předem sanitizovaný, v build time
-zapečený do několika JSON souborů a servírovaný z Azure Static Web Apps na
-Free tieru za managed TLS certem.
+Abychom celou věc zhmotnili — a abyste nemuseli sami pouštět inventory script
+jen kvůli tomu, abyste viděli tvar dat — vzali jsme výstup z jednoho
+reálného tenantu, sanitizovali ho a dali za malý read-only dashboard na
+**[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
-Je to existence proof: celý governance povrch se vejde do 234 kB JS bundlu
-(72 kB gzipped) a vykreslí se pod jednu vteřinu.
+Dashboard není pointou článku; **tou je API.** Každá z obrazovek níže je jen
+jiný pohled na stejný JSON, který endpoint vrací — je tu proto, aby ukázala,
+jaký governance obraz je teď v dosahu jednoho HTTP volání.
 
-Co tam je:
-
-### 1. Dashboard — single-screen overview
+### Dashboard — single-screen overview
 
 ![Souhrnný dashboard s přehledem 258 vlastních Copilot packages]({{ "/assets/images/dashboard.png" | relative_url }})
 
-Čtyři KPI dlaždice (Custom packages · Blocked · Orphan agents · Outdated
-manifest) a čtyři breakdown bary (Builder · Element Type · Source Type ·
-Host). Tohle by si měl Copilot admin pouštět každé pondělí ráno.
+Čtyři KPI (Custom packages · Blocked · Orphan agents · Outdated manifest)
+a čtyři breakdowny (Builder · Element Type · Source Type · Host) — všechno
+odvozené přímo z polí list endpointu. Tohle si Copilot admin teď může
+vygenerovat kdykoli proti jakémukoli tenantu.
 
-### 2. Agents — prohledávatelný inventář
+### Agents — prohledávatelný inventář
 
 ![Inventory tabulka: každý vlastní Copilot package v tenantu]({{ "/assets/images/agents.png" | relative_url }})
 
-258 řádků v TanStack-Table s full-text vyhledáváním napříč name / publisher /
-ID a tři faceted filtry (Type · Builder · Element). Klik na kterýkoli řádek
-vás přenese do detailu daného balíčku s plným JSONem, element definitions
-a seznamy přiřazených uživatelů / skupin.
+Každý balíček v tenantu jako jeden řádek, prohledávatelný podle
+name / publisher / ID a filtrovatelný podle typu, builderu a elementu.
+Za každým řádkem sedí kompletní `/packages/{id}` payload — element
+definitions, přiřazení uživatelé, skupiny, verze manifestu. Všechno z API.
 
-### 3. Cowork Skills — povrch AgentSkills
+### Cowork Skills — povrch AgentSkills
 
 ![AgentSkills: znovupoužitelné definice LLM skillů napříč agenty]({{ "/assets/images/cowork-skills.png" | relative_url }})
 
-Karty pro každý `AgentSkills` element v tenantu. Každá ukazuje SharePoint
-folder, ve kterém skill žije, site ID, na kterém je hostován, flag `embedded`
-a plný popis (který slouží zároveň jako LLM tool description). Tohle jsou
-stavební kostky další vlny Copilot agentů, které se budou skládat za běhu.
+Samostatný pohled na element type `AgentSkills` — nové SharePointem hostované
+definice LLM toolů, které Copilot agenti skládají za běhu. Až do tohohle API
+neexistoval admin povrch, který by je vůbec dokázal vyjmenovat.
 
-### 4. Governance — action queue
+### Governance — action queue
 
 ![Governance: blocked + orphan agenti vyžadující pozornost admina]({{ "/assets/images/governance.png" | relative_url }})
 
-Dvě tabulky, na které admin může přímo reagovat: **blocked** (už zablokované
-natvrdo — je to záměr?) a **orphan** (bez vlastníka — přiřaďte ho, nebo
-balíček odstraňte). Nic složitého, ale přesně tahle obrazovka mění JSON dump
-ve workflow.
-
-### Z čeho je to postavené
-
-- **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Table.
-- **Datová pipeline:** Python script (`scripts/build_swa_data.py`), který
-  zavolá Graph endpoint, projde každý JSON uzel, zamění GUIDs za tokeny typu
-  `guid-0001`, anonymizuje e-maily, aplikuje malý `sanitize.json` s pravidly
-  pro nahrazení jmen zákazníků (např. reálná jména → "Contoso" / "Fabrikam")
-  a vyplivne čtyři JSON soubory do `public/data/`. Z buildu neuniká žádné PII.
-- **Hosting:** Azure Static Web Apps (Free) v West Europe, managed TLS,
-  custom doména `a365graph.ai-news.cz`. Cena: 0 EUR / měsíc.
-- **Deploy:** jeden shell script (`swa/deploy.sh`) — Python rebuild, Vite
-  build, vyzvednutí deployment tokenu, push přes
-  `@azure/static-web-apps-cli`. ~30 s end-to-end.
-
-Celé to je tak nepatrné, až je to skoro k smíchu. Pointa je: **jakmile máte
-tohle API, zbytek je triviální.** Většina engineering effortu šla do
-sanitizace, ne do vizualizace.
+Dva seznamy, které mění JSON dump ve workflow: **blocked** balíčky (řídí se
+polem `isBlocked`) a **orphan** agenti (řídí se `ownerId=null`). Obojí padá
+z API zadarmo.
 
 ## Vzory, které jsme zkusili a stojí za přejmutí
 
@@ -498,25 +492,33 @@ Tři přání, v pořadí priority:
 
 ## Vyzkoušejte si to
 
-Kód, který pohání živé demo, je dost malý na to, abyste si ho přečetli
-za odpoledne:
+Jestli máte tenant s licencí na Microsoft 365 Copilot a účet s rolí Copilot
+Admin, nejjednodušší end-to-end volání proti tomuhle API vypadá v podstatě
+takhle:
 
-- Inventory tool — API klient + generátor reportů: `agentsreports/`
-  (Python · MSAL device-code · OData paging · governance metriky)
-- Statický dashboard — Vite / React / TS, bez backendu: `swa/`
-  (TanStack Table · Tailwind · React Router · 234 kB bundle)
-- Build &amp; sanitize pipeline: `scripts/build_swa_data.py`
-  (scrubber GUIDů · anonymizace e-mailů · uspořádaná substituce jmen)
+```bash
+az login --scope https://graph.microsoft.com/CopilotPackages.Read.All \
+         --allow-no-subscriptions
+TOKEN=$(az account get-access-token \
+  --scope https://graph.microsoft.com/CopilotPackages.Read.All \
+  --query accessToken -o tsv)
 
-Repo je strukturované tak, abyste mohli:
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://graph.microsoft.com/beta/copilot/admin/catalog/packages?\$top=100" \
+  | jq '.value | length, .[0]'
+```
 
-1. Nastavit `TENANT_ID` a `CLIENT_ID` v `.env`.
-2. Spustit `python -m agentsreports.inventory --details` — vyplivne
-   `out/packages.json`, `out/packages.csv`, `out/report.md`.
-3. *(Volitelně)* `bash swa/deploy.sh` pro publikaci vlastního dashboardu.
+Pokud na výstupu uvidíte počet a jeden package objekt — gratulujeme, máte
+kompletní inventář Copilot agentů svého tenantu v jednom stránkovaném feedu.
 
-Pokud se chcete **napřed podívat, jak to vypadá**, sanitizované demo trvale
-žije na **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
+Pro o něco pohodlnější obal (MSAL device-code, OData paging, retry na
+424/429, generátor Markdown reportu) je Python klient, který jsme použili,
+publikovaný jako `agentsreports/` v source repu. Existuje proto, abyste
+nemuseli přepisovat stejných 200 řádků.
+
+A pokud se chcete **podívat, co API dává, ještě než napíšete řádek kódu**,
+sanitizovaný živý extract trvale žije na
+**[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
 ---
 
