@@ -1,24 +1,16 @@
 title: "a365graph notes"
-description: "Notes on the Microsoft 365 Copilot Agent &amp; app Package Management API — inventory, governance, sprawl, and a live demo dashboard."
-author: "Alex Example"
+description: "Notes on the Microsoft 365 Copilot Agent &amp; app Package Management API — inventory, governance, sprawl, and a live demo dashboard at a365graph.ai-news.cz."
 url: "https://ostefka.github.io"
 baseurl: "/a365graph-blog"
 
-# Theme: shipped with GitHub Pages, no extra Gemfile needed.
-theme: minima
-minima:
-  skin: auto
-  social_links:
-    - { platform: github, user_url: "https://github.com/" }
+# Cayman theme: same as ostefka.github.io/CopilotAgentsBilling
+theme: jekyll-theme-cayman
 
-# Pretty URLs
-permalink: /:year/:month/:day/:title/
-
-# Show posts on the landing page
-show_excerpts: true
+# Cayman picks these up to render the "View on GitHub" button in the banner
+repository: ostefka/a365graph-blog
+show_downloads: false
 
 plugins:
-  - jekyll-feed
   - jekyll-seo-tag
 
 exclude:
@@ -26,11 +18,3 @@ exclude:
   - Gemfile.lock
   - README.md
   - vendor
-
-defaults:
-  - scope:
-      path: ""
-      type: posts
-    values:
-      layout: post
-      author: "Alex Example"

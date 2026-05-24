@@ -1,21 +1,20 @@
 # a365graph notes
 
-Bilingual (EN / CS) blog about the **Microsoft 365 Copilot Agent &amp; app Package Management API**
+Bilingual (EN / CS) site about the **Microsoft 365 Copilot Agent &amp; app Package Management API**
 (`/beta/copilot/admin/catalog/packages`) and the governance picture it gives you of a real tenant.
 
-- **Site:** published with GitHub Pages from this repo's `main` branch (root).
+- **Site:** https://ostefka.github.io/a365graph-blog/
 - **Live demo dashboard:** [a365graph.ai-news.cz](https://a365graph.ai-news.cz/)
-- **Theme:** stock Jekyll `minima` (no Gemfile needed — built by GitHub Pages).
+- **Theme:** Jekyll `jekyll-theme-cayman` (built by GitHub Pages).
 
 ## Contents
 
-- `index.md` — landing page listing posts.
+- `index.md` — landing page (EN + CS article list).
 - `about.md` — about page.
-- `_posts/`
-  - `2026-05-24-copilot-package-management-api.md` — EN long-read.
-  - `2026-05-24-copilot-package-management-api-cs.md` — CS long-read.
-- `assets/images/` — screenshots embedded in the post.
-- `_config.yml` — Jekyll config (`minima` + `jekyll-feed` + `jekyll-seo-tag`).
+- `article-copilot-package-management-api.md` — EN long-read.
+- `article-copilot-package-management-api-cs.md` — CS long-read.
+- `assets/images/` — screenshots embedded in articles.
+- `_config.yml` — Jekyll config.
 
 ## Local preview
 

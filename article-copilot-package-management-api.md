@@ -1,21 +1,18 @@
 ---
-layout: post
+layout: default
 title: "What a tenant of 258 Copilot agents actually looks like — touring the M365 Copilot Package Management API"
-date: 2026-05-24 18:00:00 +0200
-lang: en
-categories: copilot governance graph-api
-tags: [microsoft-365-copilot, agent-365, graph-api, governance, agent-sprawl, jekyll]
-excerpt: >
-  A long, opinionated read on the Microsoft 365 Copilot Agent &amp; app
-  Package Management API — what it returns, the things its docs don't tell you,
-  and what we found running it against a real tenant with 258 custom agents.
-  Includes a live demo dashboard at a365graph.ai-news.cz.
+description: "A long, opinionated read on the Microsoft 365 Copilot Package Management API — what it returns, the things its docs don't tell you, and what we found running it against a real tenant with 258 custom agents."
+permalink: /article-copilot-package-management-api
 ---
 
-<p style="font-size: 0.9em; color: #666; padding: 0.4em 0;">
+<p style="font-size: 0.95em; margin: 0 0 1.5em 0;">
   <strong>English</strong> &nbsp;|&nbsp;
-  <a href="{{ '/2026/05/24/copilot-package-management-api-cs/' | relative_url }}">Česky &rarr;</a>
+  <a href="{{ '/article-copilot-package-management-api-cs' | relative_url }}">Česky &rarr;</a>
+  &nbsp;|&nbsp;
+  <a href="{{ '/' | relative_url }}">← Back to articles</a>
 </p>
+
+# What a tenant of 258 Copilot agents actually looks like
 
 > **TL;DR** — Microsoft shipped a Graph endpoint
 > (`/beta/copilot/admin/catalog/packages`) that *finally* lets a Copilot admin
@@ -27,10 +24,8 @@ excerpt: >
 > than any slide deck.
 >
 > Live demo (sanitised, read-only): **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**
->
-> ![Dashboard summary across 258 custom Copilot packages]({{ "/assets/images/dashboard.png" | relative_url }})
 
----
+![Dashboard summary across 258 custom Copilot packages]({{ "/assets/images/dashboard.png" | relative_url }})
 
 ## Why this matters
 
@@ -58,8 +53,6 @@ Microsoft 365 Copilot shows up in one paged collection, with the same shape,
 the same governance fields, and the same filter grammar.
 
 That's the only ingredient missing from doing serious **agent governance**.
-
----
 
 ## The API in one screen
 
@@ -114,8 +107,6 @@ installed by anyone, or remove the package from the tenant. (Removing the
 *package* doesn't undeploy the underlying Bot resource or AAD App Registration
 — it just takes it out of the Copilot catalog.)
 
----
-
 ## The gotcha nobody warns you about: this is **delegated only**
 
 You will read the API reference, copy your client-credentials boilerplate from
@@ -132,9 +123,8 @@ service principals.
 Practical consequence: anything you build on this needs a sign-in. For our
 inventory tool we use **MSAL device-code flow** with a serialised on-disk
 token cache, so it's a one-time login per machine and silent on every later
-run. The relevant code lives in
-`agentsreports/auth.py` — about 120 lines, mostly
-because we wanted nice progress logs through the polling loop.
+run. The relevant code lives in `agentsreports/auth.py` — about 120 lines,
+mostly because we wanted nice progress logs through the polling loop.
 
 If you can't do device-code (CI pipeline, headless box), the fallback is:
 
@@ -148,8 +138,6 @@ az account get-access-token \
 
 …and read the token from `$COPILOT_TOKEN` or `.token`. Tokens last an hour, so
 this is fine for ad-hoc analysis but not for a long-running service.
-
----
 
 ## The schema, decoded
 
@@ -203,7 +191,7 @@ ones are:
 
 - **`DeclarativeCopilots`** — a YAML-ish agent manifest with instructions,
   conversation starters, capabilities (Graph Connectors, code interpreter,
-  image generator), and `actions[]` (OpenAPI/Power Platform action plugins).
+  image generator), and `actions[]` (OpenAPI / Power Platform action plugins).
   These are *the* Microsoft 365 Copilot agents in the everyday sense.
 - **`AgentMetadatas`** — Copilot Studio-built bots, both declarative and
   custom-engine. The metadata wraps the bot's Power Platform environment ID
@@ -228,7 +216,7 @@ and it's the one that matters most for governance.
 | Field         | Meaning                                                    |
 | ------------- | ---------------------------------------------------------- |
 | `availableTo` | *who is allowed to install this package* (assignment)      |
-| `deployedTo`  | *who currently has it enabled/pinned* (active footprint)   |
+| `deployedTo`  | *who currently has it enabled / pinned* (active footprint) |
 
 Both take the same enum: `everyone`, `specific`, `admin`, `nobody`.
 
@@ -293,8 +281,6 @@ Graph package row tells you a Copilot custom agent exists; the corresponding
 App Registration tells you what permissions it was granted, whether the secret
 has been rotated, and whether anyone signed in with it lately.
 
----
-
 ## What we found in a real tenant: 258 packages
 
 We ran the inventory script against a real tenant (data is fully sanitised in
@@ -327,9 +313,7 @@ A few takeaways that surprised even the team running the tenant:
    that don't include `webApplicationInfo` simply render with blank input
    fields** — adaptive cards have `Input.Text` / `Input.ChoiceSet`
    stripped client-side. (We hit this exact issue building one of the
-   in-house agents — see
-   user notes on `webApplicationInfo` for the
-   forensic write-up.)
+   in-house agents.)
 
 3. **Sideloads aren't necessarily bad — but they're invisible to most admin
    tooling.** Fifteen `sideloaded` packages were users uploading their own
@@ -344,8 +328,6 @@ A few takeaways that surprised even the team running the tenant:
    Microsoft is rolling out under the Copilot Studio "skills" banner.
 
 ![Cowork Skills: reusable LLM tool definitions stored in SharePoint]({{ "/assets/images/cowork-skills.png" | relative_url }})
-
----
 
 ## The dashboard: [a365graph.ai-news.cz](https://a365graph.ai-news.cz/)
 
@@ -374,7 +356,7 @@ is what a Copilot admin should be looking at every Monday morning.
 258 rows in a TanStack-Table with full-text search across name / publisher /
 ID, and three faceted filters (Type · Builder · Element). Click any row to
 drop into a per-package detail page with the full JSON, the element
-definitions, and the assigned user/group lists.
+definitions, and the assigned user / group lists.
 
 ### 3. Cowork Skills — the AgentSkills surface
 
@@ -397,23 +379,20 @@ Nothing fancy, but this is the screen that turns a JSON dump into a workflow.
 ### What it's built from
 
 - **Frontend:** Vite + React + TypeScript + Tailwind + TanStack Table.
-- **Data pipeline:** a Python script
-  (`scripts/build_swa_data.py`) that hits the Graph
-  endpoint, walks every JSON node, scrubs GUIDs to `guid-0001`-style tokens,
-  redacts email addresses, applies a small `sanitize.json` of customer-name
-  replacements (e.g. real names → "Contoso" / "Fabrikam"), and emits four JSON
-  files into `public/data/`. Zero PII leaves the build step.
+- **Data pipeline:** a Python script (`scripts/build_swa_data.py`) that hits the
+  Graph endpoint, walks every JSON node, scrubs GUIDs to `guid-0001`-style
+  tokens, redacts email addresses, applies a small `sanitize.json` of
+  customer-name replacements (e.g. real names → "Contoso" / "Fabrikam"), and
+  emits four JSON files into `public/data/`. Zero PII leaves the build step.
 - **Hosting:** Azure Static Web Apps (Free) in West Europe, managed TLS,
-  custom domain `a365graph.ai-news.cz`. Cost: 0 EUR/month.
-- **Deploy:** one shell script
-  (`swa/deploy.sh`) — Python rebuild, Vite build, fetch
-  deployment token, push via `@azure/static-web-apps-cli`. ~30 s end-to-end.
+  custom domain `a365graph.ai-news.cz`. Cost: 0 EUR / month.
+- **Deploy:** one shell script (`swa/deploy.sh`) — Python rebuild, Vite build,
+  fetch deployment token, push via `@azure/static-web-apps-cli`. ~30 s
+  end-to-end.
 
 The whole thing is so small it's almost embarrassing. The point is: **once
 you have the API, the rest is trivial.** Most of the engineering effort went
 into sanitisation, not visualisation.
-
----
 
 ## Things we tried that you can copy
 
@@ -473,8 +452,6 @@ review, and run `grep` against the published artifact as a unit test:
     swa/public/data/ | grep -v 'guid-[0-9]'
 ```
 
----
-
 ## What's still missing from the API
 
 The endpoint is excellent. Not perfect.
@@ -500,8 +477,6 @@ The endpoint is excellent. Not perfect.
 None of this is blocking — it's the kind of polish that a preview API
 collects on the way to GA.
 
----
-
 ## What we'd like next from Microsoft
 
 Three asks, in priority order:
@@ -517,20 +492,15 @@ Three asks, in priority order:
    answer "which agent is *actually* used by 10k+ users?" without enumerating
    every assignment.
 
----
-
 ## Try it yourself
 
 The code that powers the live demo is small enough to read in an afternoon:
 
-- Inventory tool — the API client + report generator:
-  `agentsreports/`
+- Inventory tool — the API client + report generator: `agentsreports/`
   (Python · MSAL device-code · OData paging · governance metrics)
-- Static dashboard — Vite/React/TS, no backend:
-  `swa/`
+- Static dashboard — Vite / React / TS, no backend: `swa/`
   (TanStack Table · Tailwind · React Router · 234 kB total bundle)
-- Build &amp; sanitise pipeline:
-  `scripts/build_swa_data.py`
+- Build &amp; sanitise pipeline: `scripts/build_swa_data.py`
   (GUID scrubber · email redactor · ordered name replacements)
 
 The repo is structured so you can:
@@ -545,6 +515,8 @@ permanently at **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
 ---
 
-*Comments &amp; corrections welcome. This site is generated from
-`docs/_posts/` using GitHub Pages — open a PR if you
-want to fix something.*
+<p style="font-size: 0.95em; margin-top: 2em;">
+  <a href="{{ '/article-copilot-package-management-api-cs' | relative_url }}">Česky &rarr;</a>
+  &nbsp;|&nbsp;
+  <a href="{{ '/' | relative_url }}">← Back to articles</a>
+</p>
