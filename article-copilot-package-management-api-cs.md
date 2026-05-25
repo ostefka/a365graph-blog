@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "Jak vypadá tenant s 258 Copilot agenty — průvodce M365 Copilot Package Management API"
-description: "Delší, názorový článek o Microsoft 365 Copilot Package Management API — co vrací, co se v dokumentaci nedočtete, a co jsme zjistili při běhu proti reálnému tenantu s 258 vlastními agenty."
+title: "Inventář vlastních agentů přes Microsoft Agent 365"
+description: "Objevte, prověřte a řiďte každého Copilot agenta ve svém tenantu z jednoho Graph endpointu — byznys hodnota Microsoft 365 Copilot Package Management API."
 permalink: /article-copilot-package-management-api-cs
 ---
 
@@ -13,20 +13,20 @@ permalink: /article-copilot-package-management-api-cs
   <a href="{{ '/' | relative_url }}">← Zpět na seznam článků</a>
 </p>
 
-# Jak vypadá tenant s 258 Copilot agenty
+# Inventář vlastních agentů přes Microsoft Agent 365
 
 > **TL;DR** — Microsoft uvolnil v Graphu endpoint
 > (`/beta/copilot/admin/catalog/packages`), díky kterému Copilot admin
 > *konečně* vidí všechny vlastní agenty, deklarativní copiloty, boty
 > i Office add-iny ve svém tenantu — napříč Copilot Studiem, Agent Builderem,
 > Teams Toolkitem, SharePointem, AI Foundry i sideloadovanými balíčky —
-> v jednom stránkovaném JSON feedu. Spustili jsme ho proti reálnému tenantu,
-> našli 258 packages a obraz "agent sprawlu", který z dat vystoupil, je
-> zajímavější než kterákoli prezentace.
+> v jednom stránkovaném JSON feedu. Spustili jsme ho proti reálnému tenantu
+> a obraz "agent sprawlu", který z dat vystoupil, je zajímavější než
+> kterákoli prezentace.
 >
 > Jako pomůcku — abyste viděli, co API skutečně vrací, aniž byste museli
-> napsat jediný řádek kódu — jsme výstup sanitizovali a dali za read-only
-> dashboard na **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
+> napsat jediný řádek kódu — jsme postavili malý read-only dashboard
+> na **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 > *Tenhle článek je o Graph API. Dashboard je jen obohacení, ukázka toho, co
 > v JSON řádcích reálně sedí.*
 
@@ -304,9 +304,7 @@ byl secret rotován a jestli se s ním v poslední době někdo přihlásil.
 
 ## Co jsme našli v reálném tenantu: 258 packages
 
-Spustili jsme inventory script proti reálnému tenantu (data ve veřejném
-dashboardu jsou plně sanitizovaná — jména, GUIDs i e-maily jsou nahrazené
-placeholdery). Klíčová čísla:
+Spustili jsme inventory script proti reálnému tenantu. Klíčová čísla:
 
 | Metrika                       | Počet | Poznámka                                          |
 | ----------------------------- | ----: | ------------------------------------------------- |
@@ -354,8 +352,8 @@ Pár závěrů, které překvapily i tým, který tenant provozuje:
 ## Co API přináší, vizualizováno
 
 Abychom celou věc zhmotnili — a abyste nemuseli sami pouštět inventory script
-jen kvůli tomu, abyste viděli tvar dat — vzali jsme výstup z jednoho
-reálného tenantu, sanitizovali ho a dali za malý read-only dashboard na
+jen kvůli tomu, abyste viděli tvar dat — dali jsme výstup z jednoho reálného
+tenantu za malý read-only dashboard na
 **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
 Dashboard není pointou článku; **tou je API.** Každá z obrazovek níže je jen
@@ -441,20 +439,6 @@ ani `elementDefinitions`. Pro skutečnou governance chcete detail každého
 balíčku. Počítejte ~2 ms na volání při warm cache, ~50 ms při cold — pro
 258 packages to vyjde řádově na 15 s end-to-end.
 
-### 5. Sanitizujte ještě před publikací
-
-Každý reálný inventář má rozeseté jména zákazníků, jména zaměstnanců,
-e-mailové adresy, SharePoint site IDs a Azure subscription GUIDs. Pokud
-dashboard publikujete veřejně (jako my), dělejte redakci v **build time**,
-zapište sanitizační pravidla do JSON konfigu, který se dá zreviewovat,
-a spusťte `grep` proti publikovanému artefaktu jako unit test:
-
-```bash
-# build selže, pokud propadne nějaký reálný GUID
-! grep -REo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-    swa/public/data/ | grep -v 'guid-[0-9]'
-```
-
 ## Co API zatím chybí
 
 Endpoint je výborný. Není ale dokonalý.
@@ -521,7 +505,7 @@ publikovaný jako `agentsreports/` v source repu. Existuje proto, abyste
 nemuseli přepisovat stejných 200 řádků.
 
 A pokud se chcete **podívat, co API dává, ještě než napíšete řádek kódu**,
-sanitizovaný živý extract trvale žije na
+živý extract trvale žije na
 **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
 ---

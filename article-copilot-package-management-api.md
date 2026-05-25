@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "What a tenant of 258 Copilot agents actually looks like — touring the M365 Copilot Package Management API"
-description: "A long, opinionated read on the Microsoft 365 Copilot Package Management API — what it returns, the things its docs don't tell you, and what we found running it against a real tenant with 258 custom agents."
+title: "Custom agent inventory with Microsoft Agent 365"
+description: "Discover, audit and govern every Copilot agent in your tenant from one Graph endpoint — the business value behind the Microsoft 365 Copilot Package Management API."
 permalink: /article-copilot-package-management-api
 ---
 
@@ -12,19 +12,19 @@ permalink: /article-copilot-package-management-api
   <a href="{{ '/' | relative_url }}">← Back to articles</a>
 </p>
 
-# What a tenant of 258 Copilot agents actually looks like
+# Custom agent inventory with Microsoft Agent 365
 
 > **TL;DR** — Microsoft shipped a Graph endpoint
 > (`/beta/copilot/admin/catalog/packages`) that *finally* lets a Copilot admin
 > see every custom agent, declarative copilot, bot, and Office add-in
 > in their tenant — across Copilot Studio, Agent Builder, Teams Toolkit,
 > SharePoint, AI Foundry, and sideloaded packages — in one paged JSON feed.
-> We ran it against a real tenant, found 258 packages, and the picture it
-> paints of "agent sprawl" is more interesting than any slide deck.
+> We ran it against a real tenant and the picture it paints of "agent
+> sprawl" is more interesting than any slide deck.
 >
 > As a courtesy — so you can see what the API actually returns without
-> writing a single line of code — we sanitised the output and put it behind a
-> read-only dashboard at **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
+> writing a single line of code — we put together a small read-only dashboard
+> at **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 > *This article is about the Graph API. The dashboard is just an enrichment
 > that shows the kind of value sitting in those JSON rows.*
 
@@ -300,9 +300,7 @@ has been rotated, and whether anyone signed in with it lately.
 
 ## What we found in a real tenant: 258 packages
 
-We ran the inventory script against a real tenant (data is fully sanitised in
-the public dashboard — names, GUIDs, emails are all replaced with placeholders).
-The headline numbers:
+We ran the inventory script against a real tenant. The headline numbers:
 
 | Metric                     | Count | Notes                                           |
 | -------------------------- | ----: | ----------------------------------------------- |
@@ -349,8 +347,8 @@ A few takeaways that surprised even the team running the tenant:
 ## What the API gives you, visualised
 
 To make this concrete — and to spare you having to run the inventory script
-yourself just to see the shape of the data — we sanitised the output of one
-real tenant and put it behind a small read-only dashboard at
+yourself just to see the shape of the data — we put the output of one real
+tenant behind a small read-only dashboard at
 **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
 The dashboard is not the point of this post; **the API is**. Each view below
@@ -436,20 +434,6 @@ or the `elementDefinitions`. For real governance you want the per-package
 detail. Budget ~2 ms per call on a warm cache, ~50 ms cold — for 258 packages
 that's about 15 s end-to-end.
 
-### 5. Pre-sanitise before publishing
-
-Any real inventory has customer names, employee names, email addresses,
-SharePoint site IDs, and Azure subscription GUIDs scattered through it. If
-you're publishing the dashboard publicly (as we are), do the redaction at
-**build time**, write the sanitisation rules into a JSON config you can
-review, and run `grep` against the published artifact as a unit test:
-
-```bash
-# fails the build if any real GUID slips through
-! grep -REo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-    swa/public/data/ | grep -v 'guid-[0-9]'
-```
-
 ## What's still missing from the API
 
 The endpoint is excellent. Not perfect.
@@ -517,7 +501,7 @@ as `agentsreports/` in the source repo. It exists so you don't have to
 rewrite the same 200 lines.
 
 And if you want to **see what the API gives you before writing any code**, the
-sanitised live extract lives permanently at
+live extract lives permanently at
 **[a365graph.ai-news.cz](https://a365graph.ai-news.cz/)**.
 
 ---
