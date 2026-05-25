@@ -101,9 +101,12 @@ Returns everything in the list payload, **plus**:
 
 - `availableTo` / `deployedTo` enums (more on these below — they're the
   governance gold)
-- `installAssignedUsers` / `installAssignedGroups` — *who can install this*
-- `enabledAssignedUsers` / `enabledAssignedGroups` — *who has it on right now*
-- `elementDefinitions[]` — manifests for every constituent
+- `allowedUsersAndGroups` — *the granular allow-list*: which specific users
+  and groups the admin has permitted to access this package
+- `acquireUsersAndGroups` — *the actual installed footprint*: users and groups
+  that have acquired / installed the package. **This is your real adoption
+  signal**, not `deployedTo`.
+- `elementDetails[]` — manifests for every constituent
   (declarative agent, bot, action, etc.) including the **AAD App ID**, manifest
   ID, and (for declarative agents) the inline `instructions` and
   `capabilities` block
@@ -178,8 +181,8 @@ Every package object has roughly this shape:
   "elementTypes":   ["DeclarativeCopilots", "Bots", "AgentSkills"],
   "supportedBuilders": ["Copilot Studio", "Agent Builder", "Agents Toolkit",
                         "SharePoint", "Foundry", "Unspecified"],
-  "availableTo": "everyone|specific|admin|nobody",
-  "deployedTo":  "everyone|specific|admin|nobody",
+  "availableTo": "none|some|all",   // packageStatus enum
+  "deployedTo":  "none|some|all",   // packageStatus enum
   "ownerId":     "guid|null"
 }
 ```
@@ -227,32 +230,46 @@ The breakdown in our real tenant: 94 AgentMetadatas, 86 DeclarativeCopilots,
 
 ### `availableTo` vs `deployedTo` — the field combo that runs your audit
 
-This is the **single most under-documented** pair of fields in the entire API,
-and it's the one that matters most for governance.
+This pair of fields is the **single most under-documented** part of the API,
+and the one that matters most for governance. Both describe **admin
+choices**, not user behaviour — something we got wrong the first time we
+looked at it.
 
-| Field         | Meaning                                                    |
+| Field         | Per the [docs](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/resources/copilotpackage) |
 | ------------- | ---------------------------------------------------------- |
-| `availableTo` | *who is allowed to install this package* (assignment)      |
-| `deployedTo`  | *who currently has it enabled / pinned* (active footprint) |
+| `availableTo` | "Enum value specifying which users or groups within the tenant **can access** this package" — the admin's access policy. |
+| `deployedTo`  | "Enum value indicating the **current deployment scope** of the package within the tenant" — the admin's deployment scope. |
 
-Both take the same enum: `everyone`, `specific`, `admin`, `nobody`.
+Both take the same `packageStatus` enum: **`none`, `some`, `all`**
+(plus the evolvable sentinel `unknownFutureValue`).
 
-Combinations and what they mean in practice:
+What each combination means in practice:
 
-- `available=everyone, deployed=everyone` — **broadly active**. A real
-  tenant-wide agent. Treat as production. (Most Microsoft-made content.)
-- `available=everyone, deployed=specific` — **available but adoption is slow**.
-  Marketing rolled it out but the org isn't picking it up. Adoption signal.
-- `available=specific, deployed=specific` — **scoped pilot**. Healthy state
-  for a not-yet-GA agent. Verify the assignment groups still exist.
-- `available=admin, deployed=admin` — **admin-only**. Often legacy bots that
-  were never published broadly. **Candidates for removal.**
-- `available=nobody, deployed=nobody` — orphaned. Probably published in error
-  and never followed up. Safe to delete.
-- `available=nobody, deployed=specific` — **danger**. The package can no longer
-  be installed by anyone, but users who already have it still have it. This is
-  the state right after an emergency block and *before* you clean up. If you
-  see this and you didn't block it intentionally, something went wrong.
+- `availableTo=all, deployedTo=all` — **broadly published**. Admin permits
+  everyone to access AND actively deployed to everyone. Tenant-wide rollout.
+- `availableTo=all, deployedTo=some` — **broadly permitted, narrowly
+  pushed**. Anyone can install it, but the admin only proactively deployed
+  (e.g. pre-pinned) for a subset.
+- `availableTo=all, deployedTo=none` — **opt-in availability**. Admin permits
+  everyone to access, hasn't actively deployed it to anyone. Pure
+  self-install model.
+- `availableTo=some, deployedTo=some` — **scoped pilot**. Restricted access
+  AND restricted deployment. Healthy state for a not-yet-GA agent. Verify
+  the assignment groups still exist.
+- `availableTo=some, deployedTo=none` — **restricted, opt-in inside the
+  group**. Admin allow-listed certain users, but didn't proactively push.
+- `availableTo=none, deployedTo=none` — nobody can access, nothing deployed.
+  Effectively retired or never-released. **Candidate for removal.**
+- `availableTo=none, deployedTo=some` — **danger**. The admin revoked
+  access, but a prior deployment is still in place. This is what you see
+  briefly after an admin block before the cleanup completes. If you see it
+  and you didn't block intentionally, something went wrong.
+
+Neither field tells you **adoption**. "Are users actually using this?" is
+answered by `acquireUsersAndGroups` on the detail endpoint — the list of
+users/groups that have actually acquired the package. A package can be
+`availableTo=all` and still have an empty `acquireUsersAndGroups`; that's
+your real adoption signal.
 
 For the dashboard at [a365graph.ai-news.cz](https://a365graph.ai-news.cz/) we
 visualise this combo on the **Governance** tab — it's by far the most useful
@@ -429,10 +446,12 @@ if resp.status_code in retryable or resp.status_code >= 500:
 
 ### 4. Always pull `--details` for governance
 
-The list endpoint is fast but doesn't carry `installAssignedUsers` / `groups`
-or the `elementDefinitions`. For real governance you want the per-package
-detail. Budget ~2 ms per call on a warm cache, ~50 ms cold — for 258 packages
-that's about 15 s end-to-end.
+The list endpoint is fast but doesn't carry `allowedUsersAndGroups`,
+`acquireUsersAndGroups`, or `elementDetails`. For real governance you want
+the per-package detail — in particular `acquireUsersAndGroups`, which is the
+only field that tells you whether anyone has actually installed the package.
+Budget ~2 ms per call on a warm cache, ~50 ms cold — for 258 packages that's
+about 15 s end-to-end.
 
 ## What's still missing from the API
 
@@ -441,7 +460,7 @@ The endpoint is excellent. Not perfect.
 - **No `$count`** on the collection. You don't know how many pages you have
   until you've drained them. Not a showstopper, but it makes progress UIs
   harder.
-- **No `$expand` for `elementDefinitions`.** You always do an N+1 to get them.
+- **No `$expand` for `elementDetails`.** You always do an N+1 to get them.
   For 258 packages that's 258 extra HTTP calls. Cacheable, but tedious.
 - **No webhooks / change feed.** There is no
   `delta()` on the collection — you can't subscribe to "tell me when a new
@@ -451,7 +470,7 @@ The endpoint is excellent. Not perfect.
 - **`devPreview` manifest agents leak through.** Old declarative agents that
   were built against the dev-preview manifest schema show up alongside
   current packages with no visual marker. They're discoverable via the
-  `manifestVersion` inside `elementDefinitions[].manifest`, but parsing
+  `manifestVersion` inside `elementDetails[].manifest`, but parsing
   semver is on you.
 - **App-only is still blocked.** Already covered. The day this lands,
   nightly inventory becomes trivial in a service principal.

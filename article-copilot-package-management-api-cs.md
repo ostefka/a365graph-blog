@@ -102,9 +102,12 @@ GET /beta/copilot/admin/catalog/packages/{id}
 Vrací všechno, co je v list payloadu, **plus**:
 
 - `availableTo` / `deployedTo` enumy (viz níže — tohle je governance zlatý důl)
-- `installAssignedUsers` / `installAssignedGroups` — *kdo to může nainstalovat*
-- `enabledAssignedUsers` / `enabledAssignedGroups` — *kdo to má právě zapnuté*
-- `elementDefinitions[]` — manifesty pro každou součást (deklarativní agent,
+- `allowedUsersAndGroups` — *granulární allow-list*: kteří konkrétní
+  uživatelé a skupiny mají od admina povolený přístup k balíčku.
+- `acquireUsersAndGroups` — *skutečný nainstalovaný footprint*: uživatelé
+  a skupiny, kteří si balíček opravdu pořídili / nainstalovali. **Tohle
+  je váš reálný signál adopce**, ne `deployedTo`.
+- `elementDetails[]` — manifesty pro každou součást (deklarativní agent,
   bot, action…) včetně **AAD App ID**, manifest ID a u deklarativních agentů
   i inline `instructions` a bloku `capabilities`
 
@@ -180,8 +183,8 @@ Každý package object má zhruba tuhle strukturu:
   "elementTypes":   ["DeclarativeCopilots", "Bots", "AgentSkills"],
   "supportedBuilders": ["Copilot Studio", "Agent Builder", "Agents Toolkit",
                         "SharePoint", "Foundry", "Unspecified"],
-  "availableTo": "everyone|specific|admin|nobody",
-  "deployedTo":  "everyone|specific|admin|nobody",
+  "availableTo": "none|some|all",   // packageStatus enum
+  "deployedTo":  "none|some|all",   // packageStatus enum
   "ownerId":     "guid|null"
 }
 ```
@@ -229,32 +232,44 @@ Rozložení v našem reálném tenantu: 94 AgentMetadatas, 86 DeclarativeCopilot
 ### `availableTo` vs `deployedTo` — dvojice, která řídí váš audit
 
 Tahle dvojice polí je v celém API **jednoznačně nejhůř zdokumentovaná** —
-a zároveň ta, na které pro governance nejvíc záleží.
+a zároveň ta, na které pro governance nejvíc záleží. Obě pole popisují
+**volbu admina**, ne chování uživatelů — což jsme při prvním čtení měli
+špatně.
 
-| Pole          | Význam                                                     |
+| Pole          | Podle [dokumentace](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/api/admin-settings/package/resources/copilotpackage) |
 | ------------- | ---------------------------------------------------------- |
-| `availableTo` | *kdo má povoleno tenhle balíček nainstalovat* (assignment) |
-| `deployedTo`  | *kdo ho má právě zapnutý / připnutý* (aktivní footprint)   |
+| `availableTo` | "Enum specifikující, kteří uživatelé nebo skupiny v tenantu **mají přístup** k balíčku" — adminem nastavená access policy. |
+| `deployedTo`  | "Enum udávající **aktuální rozsah deploymentu** balíčku v tenantu" — rozsah, na který ho admin reálně nasadil. |
 
-Obě používají stejný enum: `everyone`, `specific`, `admin`, `nobody`.
+Obojí používá stejný `packageStatus` enum: **`none`, `some`, `all`**
+(plus evolvable sentinel `unknownFutureValue`).
 
-Kombinace a co znamenají v praxi:
+Co jednotlivé kombinace znamenají v praxi:
 
-- `available=everyone, deployed=everyone` — **plošně aktivní**. Reálný
-  tenant-wide agent. Berte jako produkci. (Většinou obsah od Microsoftu.)
-- `available=everyone, deployed=specific` — **dostupné, ale adopce vázne**.
-  Marketing to nasadil, organizace si to nebere. Signál o adopci.
-- `available=specific, deployed=specific` — **pilot s vymezeným rozsahem**.
-  Zdravý stav pro agenta před GA. Ověřte, že přiřazené skupiny pořád
-  existují.
-- `available=admin, deployed=admin` — **jen pro adminy**. Často legacy boti,
-  které nikdo nikdy nepublikoval širšímu publiku. **Kandidáti na smazání.**
-- `available=nobody, deployed=nobody` — osiřelé. Pravděpodobně omylem
-  publikované a nedotažené. Bezpečně smazatelné.
-- `available=nobody, deployed=specific` — **nebezpečí**. Balíček už nikdo
-  nemůže nainstalovat, ale uživatelé, kteří ho mají, ho mají pořád. Tohle
-  je stav krátce po nouzovém zablokování, *před* následným úklidem. Pokud
-  to vidíte a sami jste nic neblokovali, něco se pokazilo.
+- `availableTo=all, deployedTo=all` — **plošně publikováno**. Admin povolil
+  přístup všem A zároveň ho aktivně nasadil všem. Tenant-wide rollout.
+- `availableTo=all, deployedTo=some` — **široký přístup, úzký deploy**.
+  Nainstalovat si ho může kdokoli, ale admin ho proaktivně nasadil
+  (např. předpřipnul) jen pro část organizace.
+- `availableTo=all, deployedTo=none` — **opt-in dostupnost**. Admin povolil
+  přístup všem, ale sám nikomu nic aktivně nenasadil. Čistě self-install model.
+- `availableTo=some, deployedTo=some` — **pilot s vymezeným rozsahem**.
+  Omezený přístup A omezený deployment. Zdravý stav pro agenta před GA.
+  Ověřte, že přiřazené skupiny pořád existují.
+- `availableTo=some, deployedTo=none` — **omezené, opt-in uvnitř skupiny**.
+  Admin allow-listoval určité uživatele, ale nasazení nechal na nich.
+- `availableTo=none, deployedTo=none` — nikdo nemá přístup, nic nenasazeno.
+  Efektivně vyřazené nebo nikdy nepublikované. **Kandidát na smazání.**
+- `availableTo=none, deployedTo=some` — **nebezpečí**. Admin odebral přístup,
+  ale dřívější deployment je pořád na svém místě. Přesně tohle vidíte krátce
+  po administrátorském blocku, než doběhne cleanup. Pokud to vidíte
+  a sámi jste nic neblokovali, něco se pokazilo.
+
+Žádné z těchto polí nevypovídá o **adopci**. "Používají to opravdu uživatelé?"
+vám řekne až `acquireUsersAndGroups` na detail endpointu — seznam uživatelů
+a skupin, kteří si balíček opravdu pořídili. Balíček může být
+`availableTo=all` a `acquireUsersAndGroups` přesto prázdné; tohle je váš
+opravdový signál adopce.
 
 V dashboardu na [a365graph.ai-news.cz](https://a365graph.ai-news.cz/) tuhle
 dvojici vizualizujeme na záložce **Governance** — je to zdaleka
@@ -434,10 +449,12 @@ if resp.status_code in retryable or resp.status_code >= 500:
 
 ### 4. Pro governance vždy `--details`
 
-List endpoint je rychlý, ale neobsahuje `installAssignedUsers` / `groups`
-ani `elementDefinitions`. Pro skutečnou governance chcete detail každého
-balíčku. Počítejte ~2 ms na volání při warm cache, ~50 ms při cold — pro
-258 packages to vyjde řádově na 15 s end-to-end.
+List endpoint je rychlý, ale neobsahuje `allowedUsersAndGroups`,
+`acquireUsersAndGroups` ani `elementDetails`. Pro skutečnou governance chcete
+detail každého balíčku — hlavně `acquireUsersAndGroups`, které jako jediné
+řekne, jestli si balíček opravdu někdo nainstaloval. Počítejte ~2 ms na
+volání při warm cache, ~50 ms při cold — pro 258 packages to vyjde řádově
+na 15 s end-to-end.
 
 ## Co API zatím chybí
 
@@ -445,7 +462,7 @@ Endpoint je výborný. Není ale dokonalý.
 
 - **Žádný `$count`** na kolekci. Nevíte, kolik stránek máte, dokud je
   nevyčerpáte. Není to zásadní problém, ale komplikuje to progress UI.
-- **Žádný `$expand` pro `elementDefinitions`.** Vždy je dotahujete přes N+1.
+- **Žádný `$expand` pro `elementDetails`.** Vždy je dotahujete přes N+1.
   Pro 258 packages to znamená 258 dalších HTTP volání. Dá se cachovat, ale
   je to otravné.
 - **Žádné webhooks / change feed.** Na kolekci není `delta()` — nemůžete se
@@ -455,7 +472,7 @@ Endpoint je výborný. Není ale dokonalý.
 - **`devPreview` manifest agenti se prosakují skrz.** Staří deklarativní
   agenti postavení proti dev-preview manifest schématu se objevují vedle
   aktuálních packages bez jakékoli vizuální značky. Najít je můžete přes
-  `manifestVersion` uvnitř `elementDefinitions[].manifest`, ale parse semveru
+  `manifestVersion` uvnitř `elementDetails[].manifest`, ale parse semveru
   je na vás.
 - **App-only je pořád blokované.** Už zmíněné. Den, kdy dorazí app-only
   varianta, se nightly inventory stane triviální i ze service principalu.
